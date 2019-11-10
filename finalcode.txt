@@ -1,0 +1,341 @@
+#include<SoftwareSerial.h>
+#include <Keypad.h>
+#include <LiquidCrystal.h>
+#define trigPin1 3
+#define echoPin1 2
+#define trigPin2 4
+#define echoPin2 5
+float time = 0, distance = 0, DownSensor = 0, UpSensor = 0;
+SoftwareSerial mySerial(2, 3);
+int pos=0; // LCD Connections
+LiquidCrystal lcd(A0,A1,A2,A3,A4,A5);
+const byte rows=4;
+const byte cols=3;
+
+char key[rows][cols]={
+{'1','2','3'},
+{'4','5','6'},
+{'7','8','9'},
+{'*','0','#'}
+};
+byte rowPins[rows]={1,2,3,4};
+byte colPins[cols]={5,6,7};
+Keypad keypad= Keypad(makeKeymap(key),rowPins,colPins,rows,cols);
+char* password="4567";
+int currentposition=0;
+int redled=10;
+int greenled=11;
+int invalidcount=12;
+
+
+void setup()
+{
+  displayscreen();
+  mySerial.begin(9600);
+  Serial.begin (9600);
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  delay(2000);
+pinMode(redled, OUTPUT);
+pinMode(greenled, OUTPUT);
+lcd.begin(16,2);
+ }
+void sensor(float trigPin, float echoPin)
+{
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  time = pulseIn(echoPin, HIGH);
+  distance = time * 340 / 20000;
+  delay(2000);
+}
+void loop()
+{
+  sensor(trigPin1, echoPin1);
+  DownSensor = distance;
+  sensor(trigPin2, echoPin2);
+  UpSensor = distance;
+  //overflow code
+  if (DownSensor < 35 && DownSensor > 30)
+  {
+    mySerial.println("AT+CMGF=1");
+
+    //Sets the GSM Module in Text Mode
+
+    delay(1000);
+
+    // Delay of 1000 milli seconds or 1 second
+    mySerial.println("AT+CMGS=\"+91xxxxxxxxx\"\r");
+
+    // Replace x with mobile number
+
+    delay(1000);
+
+    mySerial.println("reached near overflow level");
+
+    // The SMS text you want to send delay(100);
+
+    mySerial.println((char)26);
+
+    // ASCII code of CTRL+Z
+
+    delay(1000);
+
+  }
+  else if (DownSensor < 30)
+  {
+    mySerial.println("AT+CMGF=1");
+
+    //Sets the GSM Module in Text Mode
+
+    delay(1000);
+
+    // Delay of 1000 milli seconds or 1 second
+    mySerial.println("AT+CMGS=\"+91xxxxxxxxx\"\r");
+
+    // Replace x with mobile number
+
+    delay(1000);
+
+    mySerial.println("ready to overflow");
+
+    // The SMS text you want to send delay(100);
+
+    mySerial.println((char)26);
+
+    // ASCII code of CTRL+Z
+
+    delay(1000);
+
+  }
+  //cover open code
+  if (UpSensor > 2)
+  {
+  if( currentposition==0)
+{
+displayscreen();
+
+}
+int l ;
+char code=keypad.getKey();
+if(code!=NO_KEY)
+{
+lcd.clear();
+lcd.setCursor(0,0);
+lcd.print("PASSWORD:");
+lcd.setCursor(7,1);
+lcd.print(" ");
+lcd.setCursor(7,1);
+for(l=0;l<=currentposition;++l)
+{
+lcd.print("*");
+}
+
+if (code==password[currentposition])
+{
+++currentposition;
+if(currentposition==4)
+{
+
+unlockdoor();
+currentposition=0;
+
+}
+
+}
+
+else
+{
+++invalidcount;
+incorrect();
+currentposition=0;
+
+}
+if(invalidcount==5)
+{
+
+++invalidcount;
+torture1();
+
+}
+if(invalidcount==8)
+{
+torture2();
+}
+delay(60000);
+mySerial.println("AT+CMGF=1");
+
+//Sets the GSM Module in Text Mode
+
+delay(1000);
+
+// Delay of 1000 milli seconds or 1 second 
+mySerial.println("AT+CMGS=\"+91xxxxxxxxx\"\r");
+
+// Replace x with mobile number
+
+delay(1000);
+
+mySerial.println("cover opened and manhole number lb20");
+
+// The SMS text you want to send delay(100);
+
+mySerial.println((char)26);
+
+// ASCII code of CTRL+Z
+delay(1000);
+
+}
+}
+// LOOP ENDS!!!//
+}
+//********OPEN THE DOOR FUNCTION!!!!***********//
+
+void unlockdoor()
+{
+delay(900);
+
+lcd.setCursor(0,0);
+lcd.println(" ");
+lcd.setCursor(1,0);
+lcd.print("Access Granted");
+lcd.setCursor(4,1);
+lcd.println("WELCOME!!");
+lcd.setCursor(15,1);
+lcd.println(" ");
+int l ;
+char code=keypad.getKey();
+if(code!=NO_KEY)
+{
+lcd.clear();
+lcd.setCursor(0,0);
+lcd.print("PASSWORD:");
+lcd.setCursor(7,1);
+lcd.print(" ");
+lcd.setCursor(7,1);
+for(l=0;l<=currentposition;++l)
+{
+lcd.print("*");
+}
+
+if (code==password[currentposition])
+{
+++currentposition;
+if(currentposition==4)
+{
+
+lockdoor();
+currentposition=0;
+
+}
+
+}
+
+else
+{
+++invalidcount;
+incorrect();
+currentposition=0;
+
+}
+}
+}
+//lock door
+void lockdoor()
+{
+  lcd.clear();
+  displayscreen();
+}
+
+//************WRONG CODE FUNCTION********//
+
+void incorrect()
+{
+delay(500);
+lcd.clear();
+lcd.setCursor(1,0);
+lcd.print("CODE");
+lcd.setCursor(6,0);
+lcd.print("INCORRECT");
+lcd.setCursor(15,1);
+lcd.println(" ");
+lcd.setCursor(4,1);
+lcd.println("GET AWAY!!!");
+
+lcd.setCursor(13,1);
+lcd.println(" ");
+Serial.println("CODE INCORRECT YOU ARE UNAUTHORIZED");
+digitalWrite(redled, HIGH);
+delay(1000);
+lcd.clear();
+digitalWrite(redled, LOW);
+displayscreen();
+}
+//************** CLEAR THE SCREEN!!!*************//
+void clearscreen()
+{
+lcd.setCursor(0,0);
+lcd.println(" ");
+lcd.setCursor(0,1);
+lcd.println(" ");
+lcd.setCursor(0,2);
+lcd.println(" ");
+lcd.setCursor(0,3);
+lcd.println(" ");
+}
+//********DISPALAY FUNCTION!!!*************//
+void displayscreen()
+{
+
+lcd.setCursor(0,0);
+lcd.println("*ENTER THE CODE*");
+lcd.setCursor(1 ,1);
+
+lcd.println("TO _/_ (OPEN)!!");
+}
+//*********TORTURE1***********//
+void torture1()
+{
+delay(1000);
+lcd.clear();
+lcd.setCursor(2,0);
+lcd.print("WAIT FOR ");
+lcd.setCursor(5,1);
+lcd.print("15 SECONDS");
+lcd.setCursor(1,1);
+lcd.print(" to try again?");
+delay(15000);
+lcd.clear();
+
+}
+//*****TORTURE2*****//
+void torture2()
+{
+  mySerial.println("AT+CMGF=1");
+
+//Sets the GSM Module in Text Mode
+
+delay(1000);
+
+// Delay of 1000 milli seconds or 1 second 
+mySerial.println("AT+CMGS=\"+91xxxxxxxxx\"\r");
+
+// Replace x with mobile number
+
+delay(1000);
+
+mySerial.println("cover opened and manhole number lb20");
+
+// The SMS text you want to send delay(100);
+
+mySerial.println((char)26);
+
+// ASCII code of CTRL+Z
+delay(1000);
+
+}

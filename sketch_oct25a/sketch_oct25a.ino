@@ -1,0 +1,24 @@
+String myAPIkey = "CVVFSQFEI2VYCU5E"; 
+#include <SoftwareSerial.h>
+SoftwareSerial ESP8266(2, 3);
+long startTime = 0;
+unsigned char check_connection=0;
+unsigned char times_check=0;
+void setup()
+{
+  Serial.begin(9600); 
+  ESP8266.begin(9600); 
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+    ESP8266.println("AT");
+    Serial.println("AT");
+    ESP8266.println("AT+RST");
+    ESP8266.println("AT+CIPSTART=\"TCP\",\"184.106.153.149\",80");
+    String data="GET /update?api_key=CVVFSQFEI2VYCU5E&field1=26&field2=20\r\n\r\n";
+    ESP8266.println("AT+CIPSEND=66");
+    ESP8266.println(data);
+    delay(5000);
+}
+
